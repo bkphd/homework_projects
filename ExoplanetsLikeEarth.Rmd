@@ -1,0 +1,739 @@
+Exoplanets Like Earth
+========================================================
+#### Brendan Kiernan, February 2017
+
+This paper documents a brief and simple search for planets outside our solar system (exoplanets) that are similar to Earth. This is not an exercise in finding life or even finding conditions that might support life. Instead, this work compares parent star-exoplanet pairs to the Earth-Sun system at a basic physical and mechanical level. Moreover, because many space enthusiasts dream of finding an earthlike planet close to home, a haven (or "second Earth") if you will, the scatter charts depicting candidates all contain an explicit color coding accounting for distance from Earth.
+
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE)
+```
+
+```{r packages}
+# This code chunk loads the packages that are used in this analysis.
+
+# I use the plyr package for its powerful data manipulation tools.
+library(plyr)
+
+# I use ggplot2 because of its combination of power and sinplicity in the graphical representation of data.
+library(ggplot2)
+
+# I use fmsb for radar charts. The decision to use radar charts was not taken lightly, and not without
+# significant experience on my part. For my discussion with a Udacity coach on this matter see:
+# https://discussions.udacity.com/t/arithmetic-for-the-recently-returned/206857/15
+
+library(fmsb)
+
+```
+
+```{r Load_the_Data}
+# This code chunk loads the public source data and puts it into a data frame.
+
+
+#/Users/brendankiernan/Desktop/R exoplanet submission
+
+#setwd('C:\\Users\\Splarty\\udacity\\Project Four')
+# oddly, R suddenlt stopped seeing the data, so I had to point it there specifically in the next line of code
+
+setwd('/Users/brendankiernan/Desktop/R exoplanet submission')
+
+X <- read.csv('MyExoplanets.csv', header = T, check.names = F)
+XO <- as.data.frame(X)
+
+```
+
+```{r Filter_the_Data}
+# This code chunk filters the data to include only objects of interest to this analysis, that is, confirmed exoplanets with complete data for the orbital and physical characteristics used for comparison.
+
+# XO$EOD is a boolean variable that identifies exoplanets in the larger catalog, 
+# and is used here
+# as a filter to reduce the amount of data to be manipulated. Only confirmed exoplanet objects # will be 
+# considered.
+XOO <- subset(XO, XO$EOD == 1)
+
+# Six of the database's 91 relevant variables (227 in all) are selected for further consideration of the physical and 
+# mechanical characteristics of exoplanets and their parent stars.(The exoplanet's name is also included.)
+# A function is applied to ensure that each of the cases remaining for consideration has complete data.
+
+XOOO<-XOO[,c('PER','ECC', 'MASS','SEP', 'RSTAR', 'MSTAR','V', 'NAME', 'BMV', 'DIST')]
+
+#dim(XOOO)
+XF <- as.data.frame(na.omit(XOOO))
+
+```
+
+# Basic Parameters: Data  
+
+#### What is the structure of your dataset?  
+
+The Exoplanets web site (www.exoplanets.org) is a repository for public data on objects that orbit stars other than Earth's Sun. I downloaded the relevant data as a plain csv file. I wrote the data into an R data structure, and then transformed the result into an R dataframe file. This dataframe was then filtered in various ways and used to generate statistics and visualizations on exoplanets and their parent stars (there are 5454 total objects in the database, with 2926 exoplanets, to date, as a subset).  
+
+#### What is/are the main feature(s) of interest in your dataset?  
+
+Exoplanets, the main feature of interest in this dataset, are planets that orbit stars other than our sun. The dataset, with 2926 exolanets, is not encyclopedic. It includes only bodies with well-documented orbits that have been accepted as exoplanets in peer-reviewed, astronomical journals.  
+
+Each line in the exoplanets dataset contains the information regarding one exoplanet. There 91 data fields for each exoplanet (227 fields for objects of all types), with the following main categories: discovery and references, orbital parameters, transit parameters, orbital fit properties, stellar properties, stellar magnitudes, and coordinates and catalogs. Depending on the discovery method and a number of other factors, data fields for a given exoplanet may be missing.  
+
+These data enable comparisons of exoplanets, along with their parent stars, to the Earth-Sun system. This involves looking, of course, at the physical characteristics of both the exoplanets and their parent stars as well as at their inter-relationships. I selected eight variables of interest to the study, three characterizing the exoplanets (mass, orbital eccentricity, and distance from parent star), three characterizing their parent stars (brightness, mass, and star radius), the distance from the Earth to the exoplanet system, and the name of the exoplanet. The exoplanet's orbital period (year) was considered for inclusion in the final analysis but rejected as duplicative (see below).  
+
+#### What other dataset features will help support your investigation?
+
+The dataset has complete documentation and sourcing, and is well supported by the astronomical community. First, and most importantly, there is a scholarly paper that serves as a useful reference, "Exoplanet Orbit Database," that was published by The Astronomical Society of the Pacific (126: 827-837, September, 2014). This paper contains a summary of the dataset with clear, concise, and complete definitions for each of its elements. For each exoplanet, it also contains sources for further research. So if I decided to continue with this work, I would have a great place to start.  
+
+# Univariate Analysis
+
+#####Exoplanet's Mass (MASS): 
+
+Planet mass determines planet gravity, one of the key parameters of physical existence. In the exoplanets dataset, mass is presented as a fraction of the mass of Jupiter, a convenient comparative benchmark long used by astrophysicists. Summary statistics of this measure show that planetary mass varies across a wide spectrum. The dataset's median (1.1 "Jupiters") suggests, however, that mass will serve as a very substantial filter. Many candidates, as shown in Chart 1, will be eliminated because they are simply much too massive to be considered at all similar to Earth.  
+
+```{r Mass_Plot}
+summary(XF$MASS)
+
+# Here and for most subsequent variables, two histograms are generated. The first provides an overview of all of the data, the second zooms in to show values that are closest to the Earth and the Sun.
+
+ggplot(XF, aes(MASS)) + geom_histogram(binwidth = .1) +
+  labs(title="Chart 1: Exoplanet Mass", x="MASS", y="Count") 
+
+
+ggplot(XF, aes(MASS)) + 
+  
+  geom_histogram(binwidth = .005) + 
+  
+  xlim(0, 0.05) + 
+  
+  geom_vline(xintercept = 0.00315, color = 'red') + 
+  
+  annotate("text", x = 0.015, y = 15, label = "Earth = 0.3% of Jupiter's Mass") +
+  
+  labs(title="Chart 2: Exoplanet's Like Earth, Mass", x="MASS", y="Count") 
+```
+
+#####Exoplanet's Orbital Eccentricity (ECC): 
+
+Planetary orbits vary from circular to extremely elliptical (elongated). An orbit's deviation from a perfect circle is referred to as its eccentricity. Earth's orbit is nearly a perfect circle. The more eccentric the orbit, the greater the extremes of distance to the parent star. Too much eccentricity and the variations in stellar heat and brightness in the course of each orbit would be so great as too make comparisons to Earth irrelevant. The dataset's summary statistics suggest however, that there are many exoplanets with orbital shapes similar to ours.  
+
+```{r Eccentricity_Plot}
+summary(XF$ECC)
+ggplot(XF, aes(ECC)) + geom_histogram(binwidth = .02) +
+  labs(title="Chart 3: Exoplanet Orbital Eccentricity", x="ECC", y="Count") 
+
+ggplot(XF, aes(ECC))  + geom_histogram(binwidth = .005) + 
+  
+  xlim(0,.1) +
+
+  ylim(0,20) + 
+  
+  geom_vline(xintercept = 0.0167, color = 'red') +
+
+  annotate("text", x = 0.05, y = 18, 
+           label = "Earth's Orbital Eccentricity = 0.0167") +
+  
+  labs(title="Chart 4: Exoplanets Like Earth, Orbital Eccentricity", x="ECC", y="Count") 
+```
+
+#####Exoplanet's Orbital Period (PER): 
+
+Planetary years vary tremendously. Earth's, as we know, is approximately 365 days. It is interesting to note a bias in the data here. The method used to detect many exoplanets involves "wiggle" in their parent star's motion due to the effects of gravity. These effects are much more pronounced, hence more likely to be observed, when an exoplanet is extremely close to the parent star. Thus, the period data on currently discovered exoplanets probably is significantly lower than the "true" galactic average. As more and more planets are discovered using various methods, the average known orbital period is likely to increase.  
+
+```{r Period_Plot}
+summary(XF$PER)
+
+
+ggplot(XF, aes(PER))  + geom_histogram(binwidth = 10) + 
+  
+  xlim(0,1000) +
+
+  ylim(0,25) + 
+  
+  geom_vline(xintercept = 365.25, color = 'red') +
+
+  annotate("text", x = 650, y = 15, 
+           label = "Earth's Year = 365.25 Days") +
+  
+  labs(title="Chart 5: Exoplanet Orbital Period (Year)", x="PER", y="Count") 
+
+```
+
+#####Exoplanet's Distance From Parent Star (SEP):
+
+The perceived brightness of any star is a function of distance and absolute brightness. Earthlike brightness is another key parameter for an earthlike existence. The exoplanet database represents distance from the parent star in "astronomical units" ("AUs"), a measure equal to 149.6 million kilometers, the mean distance from the center of our Earth to the center of our Sun. SEP's summary statistics suggest that a very high number of exoplanets discovered to date have orbits signigicantly closer to their parent star than one astronomical unit; that is, closer to their parent stars than Earth orbits the Sun. This factor, discussed in the PER section, and also shown in a scatter chart below, will serve as a significant filter in the search.  
+
+```{r Distance_Plot}
+summary(XF$SEP)
+
+ggplot(XF, aes(SEP))  + geom_histogram(binwidth = .05) + xlim(0,2) + 
+  geom_vline(xintercept = 1, color = 'red') +
+  annotate("text", x = 1.6, y = 150, 
+           label = "Earth to Sun = 1 AU") +
+  
+  labs(title="Chart 6: Separation of Exoplanets and Parent Stars", x="SEP", y="Count") 
+  
+```
+
+#####Exoplanet's Distance From Earth (DIST):
+
+The distance to an exoplanet, obviously, is not a comparative statistic for similarity to Earth; nonetheless, it is interesting to know the distance to candidates. Here, it is measured in parsecs. One parsec is approximately 3.26 light years. Obviously, the majority of the exoplanets in the dataset are relatively close because they are easier to detect.  
+
+```{r Parsec_Plot}
+summary(XF$DIST)
+
+ggplot(XF, aes(DIST))  + geom_histogram(binwidth = 10) +
+  xlim(0,1000) + 
+  ylim(0,75) + 
+  geom_vline(xintercept = 153.5, color = 'red') +
+  annotate("text", x = 500, y = 40, 
+           label = "Avg. Distance From Earth to 
+           Exoplanet = 153.5 Parsecs") + 
+  labs(title="Chart 7: Exoplanet's Distance from Earth",
+       x="DIST", y="Count") 
+```
+
+#####Parent Star Brightness (V):
+
+Stellar brightness is measured in orders of magnitude on a logarithmic scale. The brightest stars have the lowest magnitude scores and the faintest objects have the highest. The apparent magnitude is the measure for how bright an object appears from earth in the night sky. Because perceived brightness varies inversely with the square of the distance to a light source, the absolute magnitude is the brightness of an object as it would appear at a standard distance of 10 parsecs (approximately 32.6 light years). Our Sun, with an apparent brightness of -27, is the brightest object in Earth's sky, and has an absolute magnitude of 4.83.  
+
+```{r Brightness_Plot}
+summary(XF$V)
+
+ggplot(XF, aes(V)) + geom_histogram(binwidth = 1) +
+  
+  geom_vline(xintercept = 4.83, color = 'red') + 
+  
+  annotate("text", x = 2.5, y = 40, 
+           label = "Our Sun = 4.83") + 
+  
+  labs(title="Chart 8: Brightness of Parent Stars", x="V", y="Count") 
+```
+
+
+#####Parent Star Color (BMV):
+Earthlike existence would requires the same color sun in the sky. Stellar color is measured on wht is known as the BMV scale. Our Sun, with a color score of 0.656, appears yellow-white. Other stars vary across the color spectrum.  
+
+```{r Color_Plot}
+summary(XF$BMV)
+
+ggplot(XF, aes(BMV)) + geom_histogram(binwidth = .1) +
+  
+  geom_vline(xintercept = 0.656, color = 'red') + 
+  
+  annotate("text", x = 0.1, y = 75, 
+           label = "Our Sun = 0.656") +
+  labs(title="Chart 9: Parent Star Color", x="BMV", y="Count") 
+```
+
+#####Parent Star Mass (MSTAR):
+
+Stellar mass dictates stellar gravity, a prime consideration in reckoning the similarity of a star system to our Earth-Sun home. The exoplanet dataset renders stellar mass in terms of solar masses, that is a multiple of the total mass of the Earth's Sun. Summary statistics suggests that there are many candidate solar systems with a star approximately the same size as ours.  
+
+```{r SMass_Plot}
+summary(XF$MSTAR)
+
+ggplot(XF, aes(MSTAR)) + geom_histogram() + 
+  
+  geom_vline(xintercept = 1, color = 'red') + 
+  
+  annotate("text", x = 2.5, y = 50, 
+           label = "Earth's Sun = 1 solar mass") +
+  labs(title="Chart 10: Parent Star Mass", x="MSTAR", y="Count") 
+```
+
+#####Parent Star Radius (RSTAR):
+Parent star radius is the distance from the center of the star to its outer edge. This distance is measured as a multiple of the solar radius of the Earth's Sun.  
+
+```{r Radius_Plot}
+summary(XF$RSTAR)
+
+ggplot(XF, aes(RSTAR)) + geom_histogram(binwidth = .1) + 
+  
+  xlim(0,5) + geom_vline(xintercept = 1, color = 'red') + 
+  
+  annotate("text", x = 3, y = 50, 
+           label = "Earth's Sun = 1 solar radius") + 
+  labs(title="Chart 11: Parent Star Radius", x="RSTAR", y="Count") 
+```
+
+# Bivariate Analysis
+
+```{r Create_the_Indices}
+# This code chunk creates the indices that are used to indentify exoplanets and their parent stars that
+# are similar to the Earth-Sun system. Note that variables are created to calculate the proportions 
+# between Earth and Sun and their counterparts. This simplifies the final index formulae.
+
+XF$MASSPRO <- (XF$MASS*1.898*10^27) / (5.977*10^24)
+#summary(XF$MASSPRO)
+
+XF$SEPPRO <- XF$SEP
+#summary(XF$SEPPRO)
+
+XF$ECCPRO <-  (abs(0.0167086-XF$ECC)/0.0167086)
+#summary(XF$ECCPRO)
+
+XF$ESI <- (XF$MASSPRO + XF$SEP + XF$ECCPRO)/3
+#summary(XF$ESI)
+
+XF$VPRO <- abs(XF$V/4.83)
+#summary(XF$VPRO)
+
+XF$SSI <- (XF$MSTAR + XF$RSTAR + XF$VPRO)/3
+
+Correlation <- cor.test(XF$ESI, XF$SSI)
+#Correlation
+
+Light <- cor.test(XF$V, XF$SEP)
+
+```
+
+For analytical and visualization purposes, using the key variables summarized above, I created two index variables, an "Earth Similarity Index" (ESI) and a "Sun Similarity Index" (SSI). These indices are mathematical summaries of the similarity of each exoplanet and parent star to the Earth and to the Sun.  
+
+**Earth Similarity Index: Factors and Definition**  
+
+The Earth Similarity Index is based on fundamental values related both to our home planet and to Jupiter, a convenient planetary benchmark commonly used by astronomers:  
+
+  + Earth's mass: 5.977 X 10^^24 kilograms
+  + Earth's mean distance from Sun: 149.6 million kilometers
+  + Earth's orbital eccentricity: 0.0167086
+  + Jupiter's mass: 1.898 * 10^^27 kilograms
+
+The corresponding exoplanet database fields: Mass, MASS; Distance from sun, SEP; Orbital eccentricity, ECC.  
+
+The calculated Earth Similarity Index for each exoplanet is structured as follows:    
+
+$((MASS * 1.898 * 10^27) / (5.977 * 10^24) + (SEP) + (abs(0.0167086 - ECC)/0.0167086)) / 3$
+
+The ESI formula contains three factors: the exoplanet's mass as a percentage of Jupiter's mass multipled by Jupiter's mass calculates the exoplanet's total mass in kilograms, which is then divided by Earth's mass in kilograms to find the proportion; the distance between the center of the exoplanet and the center of its sun is given in astronomical units, which is a multiple of the corresponding distance between Earth and Sun (i.e., it is a proportion as given); the absolute value of the difference between the eccentricity of Earth's orbit and the eccentricity of the exoplanet's orbit is divided by the eccentricity of Earth's orbit to find the proportion. If each of these four factors for an exoplanet was identical to Earth's, the value of the index would be one, that is (1 + 1 + 1) / = 3 / 3 = 1.    
+
+The summary statistics for this index, as expected, suggest that the vast majority of planets are quite different from Earth. Nonetheless, there is a large enough number of planets close enough to home that the search has not been entirely fruitless.    
+
+```{r ESI1_Plot}
+summary(XF$ESI)
+ggplot(XF, aes(ESI)) + geom_histogram(binwidth = 10) +xlim(0,1000) +
+  labs(title="Chart 12: Earth Similarity Index", x="ESI", y="Count") 
+```
+
+If we zoom-in to depict the exoplanets with ESI's closest to one, we can see that the number of candidates is reduced drastically. Of course, at this early stage in the process, with ESI still unperfected and a limited total pool of candidates, we are not saying that there are no or even few exoplanets like Earth. This is what we see with today's technology and an imperfect index.
+
+ <br><br>
+
+```{r ESI2_Plot}
+ggplot(XF, aes(ESI)) + geom_histogram(binwidth = .075) +xlim(0,2) +
+  labs(title="Chart 13: Earth Similarity Index, Exoplanets Like Earth",
+       x="ESI", y="Count") 
+```
+
+**Sun Similarity Index: Factors and Definition**  
+
+To create the Sun Similarity Index, I used fundamental values related to Earth's Sun:  
+
+  + Radius of Earth's Sun: 695,700 kilometers
+  + Mass of Earth's Sun:1.989 × 10^^30 kilograms
+  + Brightness of Earth's Sun: 4.83
+
+The corresponding exoplanet database fields: Radius, RSTAR; Mass, MSTAR; Brightness, V.  
+
+The calculated Sun Similarity Index value for each planet star is structured as follows:    
+
+$(MSTAR + RSTAR + abs(V / 4.83)) / 3$
+
+The SSI formula contains three factors that compare our Sun to another parent star: the mass of the parent star given in the exoplanet dataset as a multiple of our Sun's mass; the radius of the parent star given as a multiple of our Sun's radius; and the absolute brightness, or magnitude, of the parent star divided by our Sun's absolute brightness. If each of these three factors for a parent star was identical to our Sun's, the value of the index would be one, that is, ( 1+ 1 + 1) / 3 = 3 / 3 = 1.  
+
+```{r echo=FALSE, SSI1_Plot}
+summary(XF$SSI)
+ggplot(XF, aes(SSI)) + geom_histogram(binwidth = .1) +xlim(0,20) +
+  labs(title="Chart 14: Sun Similarity Index Overview", x="SSI", y="Count") 
+```
+
+If we zoom-in to depict stellar parents with SSI's closest to one, we can see that there is quite a healthy number of candidates. Earth's Sun is a very average star. This will ceratinly make it easier to find solar systems that are similar to our home here on Earth.
+
+ <br><br>
+
+```{r echo=FALSE, SSI2_Plot}
+ggplot(XF, aes(SSI)) + geom_histogram(binwidth = .05) +xlim(0,2) +
+   labs(title="Chart 15: Sun Similarity Index, Stellar Parents Like theSun",
+        x="SSI", y="Count") 
+```
+
+
+##### Of the features you investigated, were there any unusual distributions? Did you perform any operations on the data to tidy, adjust, or change the form of the data? If so, why did you do this?  
+
+To ease analysis and improve the quality of the visualizations, I changed the limits and/ or scale of the axes on several of my charts as well as adjusting the binwidth. I experimented with jitter in situations where too many stars were printed on top of one another, but in the end found that it did not improve the charts significantly. (Perhaps a large, printed color version for a presentation would be a better candidate for jitter correction than the small screen graphics in the current situation.)  
+
+##### Did you observe any interesting relationships between the other features (not the main feature(s) of interest)?  
+
+Early in the analysis, I rejected orbital period (PER), an exoplanet's "year," as a separate screening value for my Earth Similarity Index because, thanks to the laws of gravity, it is very highly correlated with SEP, the distance an exoplanet is separated from its stellar parent.  I tried, in general, to focus tightly on the most important features because I could only allocate a small portion of my total work time to this project.  
+
+
+```{r Reject_Plot}
+#summary(XF$PER)
+#summary(XF$SEP)
+ggplot(XF, aes(PER, SEP)) + geom_point() + geom_smooth() +
+  labs(title="Chart 16A: Orbital Period vs. Distance from Parent Star", x="Period (Days)", y="Distance (AU)") 
+```
+
+
+Depicting the relationship between these two variable by using a log scale makes the correlation even more apparent. There clearly is no need to include both variables in the index because it would in a sense be double counting.
+
+```{r Reject2_Plot}
+
+ggplot(XF, aes(PER, SEP)) + geom_point() + geom_smooth() +
+  scale_x_log10() +
+  scale_y_log10() +
+  labs(title="Chart 16B: Orbital Period vs. Distance from Parent Star",
+       x="Period (Days) (Log Scale)", y="Distance (AU) (Log Scale)") 
+
+
+
+```
+
+
+
+
+
+##### Talk about some of the relationships you observed in this part of the investigation. How did the feature(s) of interest vary with other features in the dataset?  
+
+The problem with trying to find an Earth-like planet in this dataset is that it is still very early in the game as far as the astronomical search for exoplanets. As discussed in the univariate section above, the majority of exoplanets have been detected due to their high gravities and / or close orbit with their parent stars, which effects the light signature of the system. Otherwise, we basically need to get lucky and be watching at just the right time in just the right place for a planet to pass in front of and eclipse, in whole or in part, the light from the parent star.  
+
+###Candidate Exoplanets Like Earth  
+
+The exoplanets dataset provided data to examine 712 candidate star systems. Each point on the scatter plots included below represents one star system, a combination of ESI and SSI for an exoplanet and its stellar parent. Shown at this scale, the data suggest the enormous variety of systems that exist in the universe. Our Earth-Sun pair is only one solution in a massive range of outcomes -- and this only considers a few simple physical characteristics.  
+
+I specifically designed the Earth Similarity Index (ESI) and the Sun Similarity Index (SSI) as two variables to function together to identify exoplanets and their correspondng parents that are as similar as possible to the Earth-Sun system. Obviously, neither index individually is sufficient to answer the question. They work together.  
+
+#### Charting All Exoplanets in the Database  
+
+```{r Plot_OneColor}
+#nrow(XF)
+XF$DISTVEC <- log10(XF$DIST)
+#XF$DISTVEC
+XF$DISTBIN <- XF[, "DISTVEC"]
+#XF$DISTBIN
+b <- c(0,1,2,3,4)
+XF$DISTANCE <- .bincode(XF$DISTBIN, b, FALSE, FALSE)
+#XF$DISTANCE
+#ggplot(XF, aes(ESI, SSI, color = XF$DISTBIN2)) + geom_point(alpha=0.5) +
+#  labs(title="Chart 17: Exoplanets Plotted by ESI and SSI", x="ESI", y="SSI") 
+
+ggplot(XF, aes(ESI, SSI)) + geom_point(aes(color = factor(DISTANCE),alpha=0.5)) +
+  labs(title="Chart 17: Exoplanets Plotted by ESI, SSI, and Distance from Earth", x="ESI", y="SSI") 
+
+# Q <- ggplot(XF, aes(ESI, SSI)) + geom_point() + xlim(0,2) + ylim(0,2)
+
+
+
+```
+
+Pearson's product-moment correlation suggests that there is some relationship between the two indices (roughly 0.36 at the 95% confidence level), indicating the possibility of planets like the Earth tending to occur naturally with stars like the Sun, but at this stage in the analysis, when the indices are in the first stage of development, and, the correlation is relative low, it does not make sense to draw any far reaching conclusions.
+
+  <br><br>
+
+```{r}
+Correlation
+```
+
+  <br><br>
+
+
+The goal of this work however, is to narrow the field to see if there are exoplanets like Earth. When the axes are adjusted to include values closer to 1, hence similar to Earth and Sun in multiple ways, the number of candidates is reduced significantly. The following charts progressively narrow the difference between the "exosystems" and ours. The final scatter chart in this section, Chart 19, shows 5 finalists. In order for this work to proceed farther and select any "winners" multivariate analysis is required. The indices, while helpful as an initial screen, need to be broken apart and the components examined.  
+
+#### The Long List: Candidates for Exoplanets Like Earth
+
+```{r Plot_Three}
+ggplot(XF, aes(ESI, SSI)) + geom_point(aes(color = factor(DISTANCE))) + 
+  xlim(0,2) + ylim(0,2) + 
+  labs(title="Chart 18: Some Leading Candidates for Exoplanets Like Earth",
+       x="ESI", y="SSI") 
+
+```
+
+There is no ultimate authority or logic for selecting just final five candidates. Why not eight? Or four, for that matter? Like much research, this study looks at the analysis as an iterative process. This paper may not have any undeniably "correct" final answer, but it will be the first step down a path that could be improved using better data (available soon from new viewing technologies) and, of course, improved methods due to the work done so far.
+
+#### The Finalists: Exoplanets Like Earth
+```{r Plot_Four}
+
+# XF3 identifies the finalists
+
+XF2 <- subset(XF, SSI>0.5 & SSI<1.5 & ESI>0.5 & ESI<1.3)
+
+ggplot(XF2, aes(ESI, SSI)) + geom_point(aes(color = factor(DISTANCE),alpha=0.5)) + 
+
+  geom_vline(xintercept = 1, color = 'green') +
+
+  geom_hline(yintercept = 1, color = 'green') +  
+  
+  
+#  geom_text(aes(label=NAME), size=2, nudge_y = .02) +
+  
+  xlim(0.6,1.45) + 
+  
+  ylim(0.65,1.55) + 
+  
+  labs(title="Chart 19: Top 5 Exoplanets Like Earth", x="ESI", y="SSI") 
+  
+#  annotate("rect", xmin = 1.12, ymin = 0.9, 
+           
+#           xmax = 1.35, ymax = 1.0, alpha = .2)
+
+```
+
+# Multivariate Analysis
+
+I designed the Earth Similarity Index (ESI) and the Sun Similarity Index (SSI) to function together to identify exoplanets and their correspondng parents that are as similar as possible to the Earth-Sun system. Obviously, neither index individually is sufficient to answer the question. They work together. But this simple shorthand approach cannot be used to draw any final conclusions. A more detailed examination is required, one that looks at multiple variables, the elements of the indices that are the foundation of the bivariate scatter charts.
+
+A pattern starts to emerge when the multiple variables that make up the index elements are broken apart and examined in detail. Chart 20 depicts the index variables for six exoplanets with the closest scores to the Earth-Sun system. They all appear to orbit much more closely to their parent stars than the Earth does to the Sun. Given the univariate analysis outlined above, this type of orbit is not at all uncommon, and therefore not surprising, particularly given that search methods bias the data toward smaller distances from parent stars. Nonetheless, it is interesting that the first round of analysis has found nothing unusual --- Earthlike planets are not the norm.
+
+```{r Plot_Spider1}
+
+XRC6 <- XF2[,c('ECCPRO','MASSPRO','SEP', 'RSTAR', 'MSTAR', 'VPRO')]
+
+ECCX2 <- c(3.5,0)
+MASSX2 <- c(3.5,0)
+SEPX2 <- c(3.5,0)
+RSTARX2 <- c(3.5,0)
+MSTARX2 <- c(3.5,0)
+VPROX2 <- c(3.5,0)
+
+BASEVAL <- data.frame(ECCX2, MASSX2, SEPX2, RSTARX2, MSTARX2, VPROX2)
+
+XXX <- rename(XRC6, c("ECCPRO" = "ECCX2", "MASSPRO"="MASSX2", 
+                      "SEP" = "SEPX2" , "RSTAR" = "RSTARX2", 
+                      "MSTAR" = "MSTARX2", "VPRO" = "VPROX2"))
+
+F1 <- rbind(BASEVAL,XXX)
+
+RC1 <- radarchart(F1, maxmin = TRUE, seg = 4, axistype = 2,
+                  centerzero = TRUE, cglty = 1,
+                  cglcol = 'grey',
+                  title = 'Chart 20: Exoplanets Like Earth: Top 6') 
+
+```
+
+| **Variable** | **Description**                            |
+|--------------|--------------------------------------------|
+| ECCX2        | Eccentricity of exoplanet orbit            |
+| SEPX2        | Distance between exoplanet and parent star |
+| MASSX2       | Mass of exoplanet                          |
+| MSTARX2      | Mass of parent star                        |
+| VPROX2       | Brightness of parent star                  |
+| RSTARX2      | Radius of parent star                      |
+
+  <br><br>
+
+
+Despite ESI and SSI scores closer to one than all of the other candidates, breaking down the index components shows that HD 20794 b and c cannot be considered earthlike. Given the mathematical design of the ESI and the SSI, false positives like these are not surprising (and not especially troubling). That is, many different combinations of values for exoplanets and their parents, none of them closely similar to Earth, could combine to produce a scatter value of (1,1) or thereabouts. Conscious of this danger, the indices are useful nonetheless as a starting point.
+
+
+#### Provisional Winners: Exoplanets Like Earth
+
+To make the results easier to see, it makes sense to eliminate some of the clutter and focus on the top two exoplanets. I term the two exoplanets in the chart below  "provisional winners" because, as it turns out, the labels show that they are planets b and c of the star designated HD 20794. In other words, the two exoplanets have the same parent star.  
+
+```{r Plot_Five}
+
+# XF3 identifies the finalists
+
+XF3 <- subset(XF2, SSI <1 & SSI >0.8 & ESI> 1.1 & ESI<1.3)
+
+XTRA <- subset(XF2, NAME == 'HD 20794 b'| NAME == 'Kepler-37 b')
+
+ggplot(XF3, aes(ESI, SSI)) + 
+  
+  geom_point(aes(color = factor(DISTANCE))) + 
+  
+  geom_vline(xintercept = 1, color = 'green') +
+
+  geom_hline(yintercept = 1, color = 'green') +  
+  
+  geom_text(aes(label=NAME), size=3, nudge_y = .01) +
+  
+  xlim(.995,1.4) + ylim(0.875,1) + 
+  
+  annotate("rect", xmin = 1.1, ymin = 0.92, 
+           
+           xmax = 1.35, ymax = .96, alpha = .2) +
+  
+  labs(title="Chart 21: Top 2 Candidates,
+       Exoplanets Like Earth", x="ESI", y="SSI") 
+
+```
+
+HD 20794 b and c orbit a star that is very similar to our Sun in brightness and mass, and a bit less similar in size. The two planets are very similar to one another, but not much like the Earth. They are significantly heavier and they orbit much closer to their parent star than Earth circles the Sun. 
+
+```{r Plot_Spider2}
+
+XRC2 <- XF3[,c('ECCPRO','MASSPRO','SEP', 'RSTAR', 'MSTAR', 'VPRO')]
+
+ECCX2 <- c(3.5,0)
+MASSX2 <- c(3.5,0)
+SEPX2 <- c(3.5,0)
+RSTARX2 <- c(3.5,0)
+MSTARX2 <- c(3.5,0)
+VPROX2 <- c(3.5,0)
+
+BASEVAL <- data.frame(ECCX2, MASSX2, SEPX2, RSTARX2, MSTARX2, VPROX2)
+
+XXX2 <- rename(XRC2, c("ECCPRO" = "ECCX2", "MASSPRO"="MASSX2",
+                       "SEP" = "SEPX2" , "RSTAR" = "RSTARX2",
+                       "MSTAR" = "MSTARX2", "VPRO" = "VPROX2"))
+
+F2 <- rbind(BASEVAL,XXX2)
+
+RC2 <- radarchart(F2, maxmin = TRUE, seg = 4, axistype = 2,
+                  centerzero = TRUE, cglty = 1, cglcol = 'grey',
+                  title = 'Chart 22: Exoplanets Like Earth: Provisional Top 2')
+```
+
+| **Variable** | **Description**                            |
+|--------------|--------------------------------------------|
+| ECCX2        | Eccentricity of exoplanet orbit            |
+| SEPX2        | Distance between exoplanet and parent star |
+| MASSX2       | Mass of exoplanet                          |
+| MSTARX2      | Mass of parent star                        |
+| VPROX2       | Brightness of parent star                  |
+| RSTARX2      | Radius of parent star                      |
+
+
+  <br><br>
+
+Charts 23 to 25 below suggest weaknesses in the current method. There is significant variation in two important factors related to separation: brightness and color. If I were to try to improve this project, this is one important area to start. Capturing the interplay of distance, brightness, and color would account for the "light environment" in a more sophisticated manner than the current indices. This would most likely involve combining separation (SEP) and brightness V into one calcualted variable, possibly inlding color, or possibly adding it as an individual variable with its own axis.
+
+Exosystem star brightness is a very important driver of similarity. The brighter that a parent star shines, the further away an exoplanet bust be located to maintain a total light environment (TLE) similar to the Earth-Sun system. Finding the best way to handle this multvariable problem would be an important next step.
+
+  <br><br>
+```{r End_One}
+
+
+P <- ggplot(XF, aes(ESI, SSI)) + geom_point(alpha=0.5) + xlim(0,500) + ylim(0,10)
+P + geom_point(aes(colour = V)) + 
+  scale_colour_gradient(low = "#FF334C", high = "#FFFF00", 
+                        space = "Lab", na.value = "grey50", guide = "colourbar") +
+  annotate("text", x = 200, y = 0.2, 
+           label = "Earth's Sun V = 4.83") +
+  labs(title ="Chart 23: Exosystem Star Brightness and Similarity to Earth",
+       x="ESI", y="SSI") 
+
+```
+  <br><br>
+  
+Parent star color is another element of the total light environment (TLE) that would influence earthlike conditions. A star that shines in the green part of the light spectrum might indeed produce "little green men," but that would be not particularly familiar to someone from our planet. Of course, while life of any kind, illuminated by a star of any color, would be an amazing discovery, the goal here is to find exoplanets like Earth.
+  
+  <br><br>
+  
+```{r End_OneBMV}
+
+P <- ggplot(XF, aes(ESI, SSI)) + geom_point(alpha=0.5) + xlim(0,500) + ylim(0,10)
+P + geom_point(aes(colour = BMV)) + 
+  scale_colour_gradient(low = "#FF334C", high = "#FFFF00", 
+                        space = "Lab", na.value = "grey50", guide = "colourbar") +
+  annotate("text", x = 200, y = 0.2, 
+           label = "Earth's Sun BMV = .5") +
+  labs(title ="Chart 24: Exosystem Star Color and Similarity to Earth",
+       x="ESI", y="SSI") 
+
+```
+ <br><br>
+  
+As depicted in Chart 25 below, the group of solar systems that are all most similar to our Earth-Sun home have several stars that are close to the same color as the Sun. This is lust one variable in a multi-variable problem, but a key element.
+
+<br><br>
+
+```{r End_Three}
+P <- ggplot(XF, aes(ESI, SSI)) + geom_point(alpha=0.5) + xlim(0,3) + ylim(0,3)
+P + geom_point(aes(colour = BMV)) +
+  scale_colour_gradient(low = "#FF334C", high = "#FFFF00",
+                        space = "Lab", na.value = "grey50", guide = "colourbar") +
+  annotate("text", x = 2, y = 0.2, 
+           label = "Earth's Sun BMV = .5") +
+  labs(title="Chart 25: Star Color for Top System Candidates",
+       x="ESI", y="SSI") 
+
+```
+
+# Final Plots and Summary
+
+This paper documented a search for exoplanets that are similar to Earth. The basic method was to compare parent star-exoplanet pairs to the Earth-Sun system at a basic physical and mechanical level. Two indices were created, an Earth Similarity Index (ESI) and a Sun Similarity Index (SSI) to filter the candidates, shown below. 
+
+### ESI & SSI and Final Candidates
+
+```{r Plot_ThreeX}
+ggplot(XF, aes(ESI, SSI)) + 
+  geom_point(aes(color = factor(DISTANCE), alpha=0.5)) +
+  labs(title="Chart 26: Top Exoplanet Candidates", caption="X",
+       x="ESI", y="SSI") + xlim(0,2) + ylim(0,2)
+
+```
+
+### Filtering Exoplanets and Defining Similarity
+
+Each point on this scatter plot represents one star system, a combination of ESI and SSI for an exoplanet and its stellar parent. Shown at this scale, the data suggest the enormous variety of systems that exist in the universe. Our Earth-Sun pair is only one solution in a massive range of outcomes -- and this only considers a few simple physical characteristics.
+
+### Exoplanets Like Earth
+
+```{r Plot_Spider2X}
+
+XRC2 <- XF3[,c('ECCPRO','MASSPRO','SEP', 'RSTAR', 'MSTAR', 'VPRO')]
+
+ECCX2 <- c(3.5,0)
+MASSX2 <- c(3.5,0)
+SEPX2 <- c(3.5,0)
+RSTARX2 <- c(3.5,0)
+MSTARX2 <- c(3.5,0)
+VPROX2 <- c(3.5,0)
+
+BASEVAL <- data.frame(ECCX2, MASSX2, SEPX2, RSTARX2, MSTARX2, VPROX2)
+
+XXX2 <- rename(XRC2, c("ECCPRO" = "ECCX2", "MASSPRO"="MASSX2",
+                       "SEP" = "SEPX2" , "RSTAR" = "RSTARX2",
+                       "MSTAR" = "MSTARX2", "VPRO" = "VPROX2"))
+
+F2 <- rbind(BASEVAL,XXX2)
+
+RC2 <- radarchart(F2, maxmin = TRUE, seg = 4, axistype = 2,
+                  centerzero = TRUE, cglty = 1, cglcol = 'grey',
+                  title = 'Chart 27: Exoplanets Like Earth: Provisional Top 2')
+
+```
+
+### The Meaning of "Similarity" and Potential Next Steps
+
+Capping the similarity indices at two (2,2) leaves more than two dozen exoplanets (broadly defined) like Earth under consideration. Since this exercise, overall, is driving toward a predetermined point (1,1), it makes sense to stop here along the way and ponder what the word "similar" really means, especially given the limited number of factors considered here, as well as the significant differences with Earth that even the two "winners" exhibit. 
+
+If I were to continue working on this problem I would fine-tune the ESI and the SSI to serve as better "mirrors." For example, the interplay between distance, stellar brightness, and stellar color creates a light environment that is handled awkardly in the current version. The interplay among these factors is shown in Chart 28 below. An improved version of the analysis would account for how these three variables act together. The negative correlation between brightness and separation, for example, is one avenue to pursue. Is the negative correlation spurious, another product of weak technology, because current methods allow bright stars to obscure exoplanets that orbit closely? These are the types of questions that would be explored in follow-on work.
+
+```{r End_FourX}
+P <- ggplot(XF, aes(SEP, V)) + geom_point()
+P + geom_point(aes(colour = BMV), alpha=0.5) +
+  scale_colour_gradient(low = "#FF334C", high = "#FFFF00", 
+                        space = "Lab", na.value = "grey50", 
+                        guide = "colourbar") +
+  geom_vline(xintercept = 1, color = 'purple') +
+  annotate("text", x = 3, y = 50, 
+           label = "Earth & Sun SEP = 1 AU") +
+  geom_hline(yintercept = 4.83, color = 'purple') +
+  annotate("text", x = 3.5, y = 1.8, 
+           label = "Earth's Sun BMV = .5") +
+  labs(title="Chart 28: Evaluating Solar Systems' Light Conditions",
+       x="Brightness", y="Separation") 
+
+```
+
+  <br><br>
+
+```{r}
+Light
+```
+
+  <br><br>
+
+
+Of course,there are other issue involved as well, issues for which comparative data do not yet exist. Might, for example, atmospheric conditions on exoplanets that vary slightly from (1,1) create an overall environment suitable for an earthloke existence? As new data becomes available the work would need to be updated.
+
+# Reflection
+
+Based on NASA estimates, there are 100 billion planets in our galaxy, and 1500 within 50 light years of Earth (bashttps: //www.nasa.gov/ multimedia/ imagegallery/ image_feature_2233.html). Using only the rough percentage calculated here, 2 out of 712, or a little more than one quarter of a percent, of these planets are "like Earth." What an exciting prospect!
+
+Like any other research project, this one has gotten to a point of diminishing returns. The analysis was structured to ask a simple question, and answer it simply. However, thanks to learning along the way, I can see some basic problems with the way that I structured certain elements: the interplay between distance, brightness, and color is perhaps the clearest example of weaknesses that I realized only very late in the process. If I were to continue the work, I would most certainly revise my treatment of these variables. 
+
+This project was also an important step along the way in my growth as a programmer / coder (and toward finishing my data analysis course with Udacity). I learned at least two important lessons here, neither related to exoplanets! Due to reasons beyond my control, I was forced to nearly four months (September through December) completely away from the project. I did not realize at the time just how "expensive" this break waould be in terms of the "startup costs" of returning to the work. The re-learning, re-thinking, and re-analyzing were quite painful indeed. This will give me pause in the future when I am weighing alternative courses of action in the middle of a programming project. Never underestimate all of the little things that your, the little things you need, and the little things you can forget.
+
+The second important "non-exoplanet" lesson here was the importance of finding answers for yourself. Because I was forced, for reasons outlined above, to re-start the project, I had to go and find the answers to many coding issues, in many cases, for a second time (sometimes for a third). This really improved my dexterity and confidence in reading and understanding sources like Stack Overflow. I still get frustrated at the egregious coder-centric opacity of much of the discussion at such sites, but I am learning to live with it and maker good use of it.
+
+
+
