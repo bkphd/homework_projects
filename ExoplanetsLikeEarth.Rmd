@@ -2,7 +2,7 @@ Exoplanets Like Earth
 ========================================================
 #### Brendan Kiernan, February 2017
 
-This paper documents a brief and simple search for planets outside our solar system (exoplanets) that are similar to Earth. This is not an exercise in finding life or even finding conditions that might support life. Instead, this work compares parent star-exoplanet pairs to the Earth-Sun system at a basic physical and mechanical level. Moreover, because many space enthusiasts dream of finding an earthlike planet close to home, a haven (or "second Earth") if you will, the scatter charts depicting candidates all contain an explicit color coding accounting for distance from Earth.
+This paper documents a very brief and simple search for planets outside our solar system (exoplanets) that are similar to Earth. This is not an exercise in finding life or even finding conditions that might support life. Instead, this work compares parent star-exoplanet pairs to the Earth-Sun system at a basic physical and mechanical level. Moreover, because many space enthusiasts dream of finding an earthlike planet close to home, a haven (or "second Earth") if you will, the scatter charts depicting candidates all contain an explicit color coding accounting for distance from Earth.
 
 
 ```{r global_options, include=FALSE}
